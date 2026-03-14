@@ -17,6 +17,7 @@ const PAGES = {
     'audit-log': renderAuditLog,
 };
 
+
 let currentPage = 'dashboard';
 
 function navigate(page) {
