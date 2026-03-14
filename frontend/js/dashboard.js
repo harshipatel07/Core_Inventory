@@ -5,6 +5,8 @@
 // Low stock ≠ Out of stock (fixed)
 // ============================================
 
+
+
 async function renderDashboard() {
     const content = document.getElementById('page-content');
     content.innerHTML = `<div class="animate-in">
