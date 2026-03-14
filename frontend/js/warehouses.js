@@ -20,6 +20,7 @@ async function renderWarehouses() {
     await loadWarehouses();
 }
 
+
 async function loadWarehouses() {
     // Guard: if the table is not on the page, do nothing (page may have changed)
     const tbody = document.getElementById('warehouses-tbody');
