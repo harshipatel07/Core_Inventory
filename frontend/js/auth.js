@@ -8,6 +8,9 @@ function showAuthForm(form) {
     document.getElementById('forgot-form').style.display = form === 'forgot' ? 'block' : 'none';
 }
 
+
+
+
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
