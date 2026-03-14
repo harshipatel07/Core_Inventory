@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Core Inventory Management System — Real-time stock tracking, warehouse management, and inventory operations.">
+    <title>Core Inventory — Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay"></div>
+
+    <!-- ===== AUTH SCREENS ===== -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-brand">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <rect width="40" height="40" rx="10" fill="url(#logo-grad)"/>
+                        <path d="M12 28V16l8-5 8 5v12l-8 5-8-5z" stroke="#fff" stroke-width="2" fill="none"/>
+                        <path d="M12 16l8 5 8-5M20 21v12" stroke="#fff" stroke-width="2"/>
+                        <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#6C5CE7"/><stop offset="1" stop-color="#A29BFE"/></linearGradient></defs>
+                    </svg>
+                </div>
+                <h1>Core<span>Inventory</span></h1>
+                <p>Smart inventory management for modern warehouses</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-card">
+                <h2>Welcome Back</h2>
+                <p class="auth-subtitle">Sign in to your account</p>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="admin@inventory.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="login-btn">Sign In</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" onclick="showAuthForm('forgot')">Forgot Password?</a>
+                    <a href="#" onclick="showAuthForm('signup')">Create Account</a>
+                </div>
+                <div class="auth-demo-hint">
+                    <span>Demo:</span> admin@inventory.com / admin123
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="auth-card" style="display:none">
+                <h2>Create Account</h2>
+                <p class="auth-subtitle">Join Core Inventory</p>
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" class="form-control" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" class="form-control" placeholder="you@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" class="form-control" placeholder="Min 8 chars, upper, lower, special" required minlength="8" oninput="checkPasswordStrength()">
+                        <div id="pw-strength" style="margin-top:4px;min-height:18px"></div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Must have: uppercase, lowercase, special character, 8+ chars</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-role">Role</label>
+                        <select id="signup-role" class="form-control">
+                            <option value="staff">Warehouse Staff</option>
+                            <option value="manager">Inventory Manager</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Create Account</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" onclick="showAuthForm('login')">Already have an account? Sign In</a>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgot-form" class="auth-card" style="display:none">
+                <h2>Reset Password</h2>
+                <p class="auth-subtitle">We'll send you an OTP</p>
+                <form onsubmit="handleRequestOTP(event)">
+                    <div class="form-group">
+                        <label for="forgot-email">Email Address</label>
+                        <input type="email" id="forgot-email" class="form-control" placeholder="you@company.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Send OTP</button>
+                </form>
+                <div id="otp-section" style="display:none">
+                    <form onsubmit="handleResetPassword(event)">
+                        <div class="form-group">
+                            <label for="otp-code">OTP Code</label>
+                            <input type="text" id="otp-code" class="form-control" placeholder="Enter 6-digit OTP" required maxlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" class="form-control" placeholder="Min 8 chars, upper, lower, special" required minlength="8">
+                            <div id="reset-pw-hints" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:6px"></div>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg btn-block">Reset Password</button>
+                    </form>
+                </div>
+                <div class="auth-links">
+                    <a href="#" onclick="showAuthForm('login')">Back to Sign In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP LAYOUT ===== -->
+    <div id="app-layout" class="app-layout" style="display:none">
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#slogo)"/>
+                        <path d="M10 23V13l6-4 6 4v10l-6 4-6-4z" stroke="#fff" stroke-width="1.5" fill="none"/>
+                        <path d="M10 13l6 4 6-4M16 17v8" stroke="#fff" stroke-width="1.5"/>
+                        <defs><linearGradient id="slogo" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6C5CE7"/><stop offset="1" stop-color="#A29BFE"/></linearGradient></defs>
+                    </svg>
+                    <span class="sidebar-title">CoreInventory</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">OVERVIEW</span>
+                    <a href="#" class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">INVENTORY</span>
+                    <a href="#" class="nav-link" data-page="products" onclick="navigate('products')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <span>Products</span>
+                        <span class="nav-badge" id="badge-stock" style="background:var(--accent-warning);color:#2D3436"></span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="stock" onclick="navigate('stock')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        <span>Stock Availability</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">OPERATIONS</span>
+                    <a href="#" class="nav-link" data-page="receipts" onclick="navigate('receipts')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Receipts</span>
+                        <span class="nav-badge" id="badge-receipts"></span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="deliveries" onclick="navigate('deliveries')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        <span>Deliveries</span>
+                        <span class="nav-badge" id="badge-deliveries"></span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="transfers" onclick="navigate('transfers')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        <span>Transfers</span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="adjustments" onclick="navigate('adjustments')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>Adjustments</span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="ledger" onclick="navigate('ledger')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        <span>Move History</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">SETTINGS</span>
+                    <a href="#" class="nav-link" data-page="warehouses" onclick="navigate('warehouses')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span>Warehouses</span>
+                    </a>
+                    <a href="#" class="nav-link" data-page="settings" onclick="navigate('settings')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user" onclick="navigate('profile')">
+                    <div class="user-avatar" id="sidebar-avatar">AU</div>
+                    <div class="user-info">
+                        <span class="user-name" id="sidebar-name">Admin User</span>
+                        <span class="user-role" id="sidebar-role">Manager</span>
+                    </div>
+                </div>
+                <button class="btn btn-ghost btn-icon" onclick="handleLogout()" title="Logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="main-content">
+            <div id="page-content">
+                <!-- Pages render here dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/products.js"></script>
+    <script src="/static/js/receipts.js"></script>
+    <script src="/static/js/deliveries.js"></script>
+    <script src="/static/js/transfers.js"></script>
+    <script src="/static/js/adjustments.js"></script>
+    <script src="/static/js/ledger.js"></script>
+    <script src="/static/js/warehouses.js"></script>
+    <script src="/static/js/settings.js"></script>
+    <script src="/static/js/profile.js"></script>
+    <script src="/static/js/stock.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
