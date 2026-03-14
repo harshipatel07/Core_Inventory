@@ -13,6 +13,7 @@ AuditLog model fields:
   id, action, module, ref_number, description, performed_by, created_at
 """
 
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
