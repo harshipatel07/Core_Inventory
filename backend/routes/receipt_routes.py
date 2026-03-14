@@ -7,6 +7,7 @@ Flow spec:
   - Print endpoint for done receipts
 """
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
