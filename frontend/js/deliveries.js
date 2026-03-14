@@ -5,6 +5,8 @@
 //       Stock alert (red row if out of stock)
 // ============================================
 
+
+
 let _deliveriesCache = [];
 let _deliveriesView  = 'list';
 
