@@ -13,13 +13,12 @@ from backend.schemas import (
     CategoryCreate, CategoryResponse
 )
 from backend.auth import get_current_user
+from backend.audit import log_action
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
 
 
-# ── Categories — defined FIRST to avoid being swallowed by /{product_id} ──
-# FIX: /categories/list and /categories/create must come BEFORE /{product_id}
-# Otherwise FastAPI matches "categories" as a product_id and returns 404.
+# ── Categories ──
 
 @router.get("/categories/list", response_model=List[CategoryResponse])
 def list_categories(
@@ -39,6 +38,9 @@ def create_category(
     db.add(cat)
     db.commit()
     db.refresh(cat)
+    log_action(db, "product", "create",
+        f"Category '{cat.name}' created",
+        performed_by=current_user.get("email"))
     return cat
 
 
@@ -49,7 +51,7 @@ def list_products(
     search: str = "",
     category_id: str = "",
     warehouse_id: str = "",
-    stock_status: str = "",   # low | out | in
+    stock_status: str = "",
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -167,6 +169,11 @@ def create_product(
     db.commit()
     db.refresh(product)
 
+    log_action(db, "product", "create",
+        f"Product '{product.name}' (SKU: {product.sku}) created with initial stock {req.initial_stock}",
+        ref_number=product.sku,
+        performed_by=current_user.get("email"))
+
     return ProductResponse(
         id=product.id, name=product.name, sku=product.sku,
         category_id=product.category_id,
@@ -203,6 +210,12 @@ def update_product(
 
     db.commit()
     db.refresh(product)
+
+    log_action(db, "product", "update",
+        f"Product '{product.name}' (SKU: {product.sku}) updated",
+        ref_number=product.sku,
+        performed_by=current_user.get("email"))
+
     return get_product(product_id, db, current_user)
 
 
@@ -217,4 +230,10 @@ def delete_product(
         raise HTTPException(status_code=404, detail="Product not found")
     product.is_active = False
     db.commit()
+
+    log_action(db, "product", "delete",
+        f"Product '{product.name}' (SKU: {product.sku}) deactivated",
+        ref_number=product.sku,
+        performed_by=current_user.get("email"))
+
     return {"message": "Product deactivated"}

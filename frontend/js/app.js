@@ -14,6 +14,7 @@ const PAGES = {
     warehouses: renderWarehouses,
     settings: renderSettings,
     profile: renderProfile,
+    'audit-log': renderAuditLog,
 };
 
 let currentPage = 'dashboard';

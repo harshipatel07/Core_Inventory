@@ -10,6 +10,7 @@ from backend.database import get_db
 from backend.models import Adjustment, Product, StockLevel, Warehouse, StockLedger
 from backend.schemas import AdjustmentCreate, AdjustmentResponse
 from backend.auth import get_current_user
+from backend.audit import log_action
 
 router = APIRouter(prefix="/api/adjustments", tags=["Adjustments"])
 
@@ -51,10 +52,6 @@ def create_adjustment(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    """
-    Create a stock adjustment.
-    Automatically computes system qty, updates stock, and logs to ledger.
-    """
     prod = db.query(Product).filter(Product.id == req.product_id).first()
     if not prod:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -63,7 +60,6 @@ def create_adjustment(
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
 
-    # Get current system stock
     sl = db.query(StockLevel).filter(
         StockLevel.product_id == req.product_id,
         StockLevel.warehouse_id == req.warehouse_id
@@ -72,7 +68,6 @@ def create_adjustment(
     qty_system = sl.qty_on_hand if sl else 0
     difference = req.qty_counted - qty_system
 
-    # FIX: Use count-based reference instead of random.randint
     count = db.query(Adjustment).count()
     ref = f"ADJ-{str(count + 1).zfill(4)}"
 
@@ -87,7 +82,6 @@ def create_adjustment(
     )
     db.add(adj)
 
-    # Update stock level
     if sl:
         sl.qty_on_hand = req.qty_counted
     else:
@@ -100,7 +94,6 @@ def create_adjustment(
 
     db.flush()
 
-    # Log to ledger
     db.add(StockLedger(
         product_id=req.product_id,
         warehouse_id=req.warehouse_id,
@@ -114,6 +107,14 @@ def create_adjustment(
 
     db.commit()
     db.refresh(adj)
+
+    sign = f"+{difference}" if difference > 0 else str(difference)
+    log_action(db, "adjustment", "create",
+        f"Stock adjustment {ref}: '{prod.name}' in {wh.name} — "
+        f"system {qty_system} → counted {req.qty_counted} (diff {sign})"
+        + (f" | reason: {req.reason}" if req.reason else ""),
+        ref_number=ref,
+        performed_by=current_user.get("email"))
 
     return AdjustmentResponse(
         id=adj.id, ref_number=adj.ref_number,

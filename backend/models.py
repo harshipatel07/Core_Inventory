@@ -279,3 +279,18 @@ class StockLedger(Base):
 
     product = relationship("Product")
     warehouse = relationship("Warehouse")
+
+
+# ──────────────────────────────────────
+# 13. AUDIT LOG
+# ──────────────────────────────────────
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id           = Column(String, primary_key=True, default=gen_uuid)
+    module       = Column(String(30), nullable=False, index=True)   # product|warehouse|delivery|transfer|receipt|adjustment
+    action       = Column(String(20), nullable=False, index=True)   # create|update|delete|validate|cancel
+    ref_number   = Column(String(30), nullable=True)
+    description  = Column(Text, nullable=False)
+    performed_by = Column(String(100), nullable=True)
+    created_at   = Column(DateTime, default=utcnow, index=True)

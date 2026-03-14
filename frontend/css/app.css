@@ -412,3 +412,333 @@ select.form-control { appearance:none; background-image:url("data:image/svg+xml,
     animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* ──────────────────────────────────────────────────────
+   RECEIPTS PAGE — Header, Search, View Toggle
+   ────────────────────────────────────────────────────── */
+
+.rcpt-page-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.rcpt-new-btn {
+    padding: 8px 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.rcpt-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    flex: 1;
+}
+
+.rcpt-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    width: 280px;
+    color: var(--text-muted);
+    transition: border-color var(--transition-fast);
+}
+.rcpt-search-wrap:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(108,92,231,0.1);
+}
+.rcpt-search-wrap input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: 0.82rem;
+    width: 100%;
+}
+.rcpt-search-wrap input::placeholder { color: var(--text-muted); }
+
+.rcpt-view-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+}
+.rcpt-toggle-btn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+}
+.rcpt-toggle-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+.rcpt-toggle-btn.active { background: rgba(108,92,231,0.15); color: var(--accent-primary); }
+
+.rcpt-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+
+/* ──────────────────────────────────────────────────────
+   KANBAN BOARD
+   ────────────────────────────────────────────────────── */
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .kanban-board { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .kanban-board { grid-template-columns: 1fr; }
+}
+
+.kanban-col {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    min-height: 200px;
+}
+
+.kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.kanban-col-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.kanban-col-count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+.kanban-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 2rem 1rem;
+}
+
+.kanban-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.kanban-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.kanban-card-ref {
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-accent);
+    letter-spacing: 0.03em;
+}
+
+.kanban-card-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+
+.kanban-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+}
+
+.kanban-items-badge {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    background: rgba(108,92,231,0.1);
+    color: var(--text-accent);
+    border-radius: 99px;
+    font-weight: 600;
+}
+
+.kanban-date {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+
+/* ──────────────────────────────────────────────────────
+   RECEIPT CREATE MODAL — item rows
+   ────────────────────────────────────────────────────── */
+
+.rcpt-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.rcpt-item-row .form-control { margin: 0; }
+
+
+/* ──────────────────────────────────────────────────────
+   STOCK PAGE — editable cell
+   ────────────────────────────────────────────────────── */
+
+.stock-editable-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-weight: 600;
+}
+.stock-editable-cell:hover {
+    border-color: var(--accent-primary);
+    background: rgba(108,92,231,0.08);
+}
+.stock-editable-cell .edit-icon { opacity: 0; transition: opacity var(--transition-fast); }
+.stock-editable-cell:hover .edit-icon { opacity: 1; }
+
+
+/* ──────────────────────────────────────────────────────
+   WAREHOUSE TABS
+   ────────────────────────────────────────────────────── */
+
+.wh-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.wh-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: -1px;
+}
+.wh-tab:hover { color: var(--text-primary); }
+.wh-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    font-weight: 600;
+}
+
+
+/* ──────────────────────────────────────────────────────
+   LEDGER — colored rows
+   ────────────────────────────────────────────────────── */
+
+.ledger-row-in td:first-child {
+    border-left: 3px solid var(--accent-secondary);
+    padding-left: calc(1rem - 3px);
+}
+.ledger-row-out td:first-child {
+    border-left: 3px solid var(--accent-danger);
+    padding-left: calc(1rem - 3px);
+}
+.ledger-row-in { background: rgba(0,184,148,0.03); }
+.ledger-row-out { background: rgba(225,112,85,0.03); }
+
+
+/* ──────────────────────────────────────────────────────
+   LOCATION / FROM-TO TAGS
+   ────────────────────────────────────────────────────── */
+
+.loc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+}
+.loc-tag-from {
+    background: rgba(253,203,110,0.1);
+    border: 1px solid rgba(253,203,110,0.25);
+    color: #FDCB6E;
+}
+.loc-tag-to {
+    background: rgba(0,184,148,0.1);
+    border: 1px solid rgba(0,184,148,0.25);
+    color: #00B894;
+}
+
+
+/* ── Dashboard ops grid (3 columns: Receipt, Delivery, Transfers) ── */
+.dash-ops-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+@media (max-width: 900px) {
+    .dash-ops-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+    .dash-ops-grid { grid-template-columns: 1fr; }
+}

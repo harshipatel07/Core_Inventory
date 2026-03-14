@@ -21,6 +21,7 @@ from backend.routes import (
     dashboard_routes,
     warehouse_routes,
     ledger_routes,
+    audit_routes,          # ← NEW
 )
 
 app = FastAPI(
@@ -48,6 +49,7 @@ app.include_router(adjustment_routes.router)
 app.include_router(dashboard_routes.router)
 app.include_router(warehouse_routes.router)
 app.include_router(ledger_routes.router)
+app.include_router(audit_routes.router)   # ← NEW
 
 # Serve static frontend files
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend")

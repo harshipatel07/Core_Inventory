@@ -146,6 +146,7 @@ class ReceiptResponse(BaseModel):
     supplier_name: Optional[str]
     warehouse_id: str
     warehouse_name: str = ""
+    warehouse_code: str = ""
     status: str
     date_val: Optional[date]
     notes: Optional[str]
@@ -165,7 +166,10 @@ class DeliveryLineResponse(BaseModel):
     id: str
     product_id: str
     product_name: str = ""
+    product_sku: str = ""
     qty: int
+    qty_available: int = 0
+    out_of_stock: bool = False
 
     class Config:
         from_attributes = True
@@ -184,6 +188,7 @@ class DeliveryResponse(BaseModel):
     customer_name: Optional[str]
     warehouse_id: str
     warehouse_name: str = ""
+    warehouse_code: str = ""
     status: str
     date_val: Optional[date]
     notes: Optional[str]
@@ -270,6 +275,10 @@ class LedgerResponse(BaseModel):
     ref_number: str
     qty_change: int
     qty_after: int
+    contact: str = ""
+    from_location: str = ""
+    to_location: str = ""
+    status: str = ""
     created_at: Optional[datetime]
 
     class Config:
@@ -284,3 +293,16 @@ class DashboardKPIs(BaseModel):
     pending_receipts: int
     pending_deliveries: int
     pending_transfers: int
+
+# ── Audit Log ──
+class AuditLogResponse(BaseModel):
+    id:           str
+    module:       str
+    action:       str
+    ref_number:   Optional[str] = None
+    description:  str
+    performed_by: Optional[str] = None
+    created_at:   Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

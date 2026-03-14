@@ -53,6 +53,8 @@ def get_kpis(db: Session = Depends(get_db)):
     delivery_operations = db.query(DeliveryOrder).filter(DeliveryOrder.status == "ready").count()
 
     pending_transfers = db.query(Transfer).filter(Transfer.status.in_(["draft"])).count()
+    done_transfers    = db.query(Transfer).filter(Transfer.status == "done").count()
+    all_transfers     = db.query(Transfer).count()
 
     return {
         "total_products": total_products,
@@ -67,6 +69,8 @@ def get_kpis(db: Session = Depends(get_db)):
         "delivery_waiting": delivery_waiting,
         "delivery_operations": delivery_operations,
         "pending_transfers": pending_transfers,
+        "done_transfers": done_transfers,
+        "all_transfers": all_transfers,
     }
 
 

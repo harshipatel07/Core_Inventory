@@ -5,7 +5,6 @@ Flow spec:
   - Status: draft → ready → done (validate), or cancel
   - On done: increase stock, log ledger
   - Print endpoint for done receipts
-  - Out-of-stock alert on lines
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,15 +15,15 @@ from typing import List
 from backend.database import get_db
 from backend.models import Receipt, ReceiptLine, Product, StockLevel, Warehouse, StockLedger
 from backend.schemas import ReceiptCreate, ReceiptResponse, ReceiptLineResponse
+from backend.audit import log_action
 
 router = APIRouter(prefix="/api/receipts", tags=["Receipts"])
 
 
 def _next_receipt_ref(warehouse_code: str, db: Session) -> str:
-    """Generate WH/<code>/IN/<id> format reference per flow spec."""
     code = (warehouse_code or "WH").upper()
     count = db.query(Receipt).count() + 1
-    return f"{code}/IN/{str(count).zfill(4)}"
+    return f"{code}/IN/{str(count).zfill(3)}"
 
 
 def _build_receipt_response(r, db):
@@ -32,11 +31,6 @@ def _build_receipt_response(r, db):
     items = []
     for line in r.lines:
         prod = db.query(Product).filter(Product.id == line.product_id).first()
-        # Check stock availability for alert
-        sl = db.query(StockLevel).filter(
-            StockLevel.product_id == line.product_id,
-            StockLevel.warehouse_id == r.warehouse_id
-        ).first()
         items.append(ReceiptLineResponse(
             id=line.id, product_id=line.product_id,
             product_name=prod.name if prod else "Unknown",
@@ -102,17 +96,16 @@ def create_receipt(req: ReceiptCreate, db: Session = Depends(get_db)):
     db.add(receipt)
     db.commit()
     db.refresh(receipt)
+
+    log_action(db, "receipt", "create",
+        f"Receipt {ref} created from supplier '{req.supplier_name}' at {wh.name}",
+        ref_number=ref)
+
     return _build_receipt_response(receipt, db)
 
 
 @router.put("/{receipt_id}/status")
 def update_receipt_status(receipt_id: str, new_status: str, db: Session = Depends(get_db)):
-    """
-    Flow spec status transitions:
-      draft → ready (TODO button)
-      ready → done (Validate button) → increases stock
-      any → canceled (Cancel button)
-    """
     r = db.query(Receipt).filter(Receipt.id == receipt_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="Receipt not found")
@@ -121,7 +114,6 @@ def update_receipt_status(receipt_id: str, new_status: str, db: Session = Depend
     if new_status not in valid:
         raise HTTPException(status_code=400, detail=f"Invalid status. Use: {valid}")
 
-    # Enforce flow transitions
     transitions = {
         "draft": ["ready", "canceled"],
         "ready": ["done", "canceled"],
@@ -165,12 +157,23 @@ def update_receipt_status(receipt_id: str, new_status: str, db: Session = Depend
 
     r.status = new_status
     db.commit()
+
+    # Audit log per status change
+    action_map = {"ready": "update", "done": "validate", "canceled": "cancel"}
+    desc_map = {
+        "ready":    f"Receipt {r.ref_number} marked as ready",
+        "done":     f"Receipt {r.ref_number} validated — stock increased",
+        "canceled": f"Receipt {r.ref_number} cancelled",
+    }
+    log_action(db, "receipt", action_map.get(new_status, "update"),
+        desc_map.get(new_status, f"Receipt {r.ref_number} status changed to {new_status}"),
+        ref_number=r.ref_number)
+
     return {"message": f"Receipt status updated to '{new_status}'", "ref_number": r.ref_number}
 
 
 @router.get("/{receipt_id}/print", response_class=HTMLResponse)
 def print_receipt(receipt_id: str, db: Session = Depends(get_db)):
-    """Flow spec: Print the receipt once it's DONE."""
     r = db.query(Receipt).filter(Receipt.id == receipt_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="Receipt not found")
@@ -237,4 +240,9 @@ def delete_receipt(receipt_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Cannot delete a completed receipt")
     db.delete(r)
     db.commit()
+
+    log_action(db, "receipt", "delete",
+        f"Receipt {r.ref_number} deleted",
+        ref_number=r.ref_number)
+
     return {"message": "Receipt deleted"}

@@ -1,5 +1,5 @@
 // ============================================
-// warehouses.js — Warehouse management page
+// warehouses.js — Warehouse & Location management
 // ============================================
 
 async function renderWarehouses() {
@@ -9,56 +9,86 @@ async function renderWarehouses() {
             <div class="page-header-actions">
                 <button class="btn btn-primary" onclick="showCreateWarehouseModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Warehouse
+                    + Add Warehouse
                 </button>
             </div>
         </div>
-        <div class="kpi-grid" id="warehouses-grid"></div>
+        <div class="table-container"><table class="data-table"><thead><tr>
+            <th>Name</th><th>Code</th><th>Address</th><th>Capacity</th><th>Locations</th><th>Actions</th>
+        </tr></thead><tbody id="warehouses-tbody"></tbody></table></div>
     </div>`;
     await loadWarehouses();
 }
 
 async function loadWarehouses() {
+    // Guard: if the table is not on the page, do nothing (page may have changed)
+    const tbody = document.getElementById('warehouses-tbody');
+    if (!tbody) return;
+
     try {
         const warehouses = await API.get('/warehouses');
-        const grid = document.getElementById('warehouses-grid');
+
+        // Guard again after async call — user may have navigated away while fetching
+        const tbodyAfter = document.getElementById('warehouses-tbody');
+        if (!tbodyAfter) return;
+
         if (warehouses.length === 0) {
-            grid.innerHTML = '<div class="empty-state"><p>No warehouses configured</p></div>';
+            tbodyAfter.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No warehouses found</p></div></td></tr>';
             return;
         }
-        grid.innerHTML = warehouses.map(w => `
-            <div class="card" style="cursor:pointer" onclick="showWarehouseLocations('${w.id}', '${escapeHTML(w.name)}')">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
-                    <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-                    <div class="actions-cell">
-                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); showEditWarehouseModal('${w.id}')">✎</button>
-                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); deleteWarehouse('${w.id}')" style="color:var(--accent-danger)">✕</button>
-                    </div>
-                </div>
-                <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:0.25rem">${escapeHTML(w.name)}</h3>
-                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">${escapeHTML(w.code || '')} · ${escapeHTML(w.address || 'No address')}</p>
-                <div style="display:flex;gap:1rem;font-size:0.8rem;color:var(--text-secondary)">
-                    <span>Capacity: <strong style="color:var(--text-primary)">${w.capacity}</strong></span>
-                    <span>Locations: <strong style="color:var(--text-primary)">${w.location_count}</strong></span>
-                </div>
-            </div>
-        `).join('');
+        tbodyAfter.innerHTML = warehouses.map(w => `<tr>
+            <td><strong>${escapeHTML(w.name)}</strong></td>
+            <td><code>${escapeHTML(w.code)}</code></td>
+            <td>${escapeHTML(w.address || '—')}</td>
+            <td>${w.capacity ?? '—'}</td>
+            <td>${w.location_count ?? 0}</td>
+            <td class="actions-cell">
+                <button class="btn btn-ghost btn-sm" onclick="showEditWarehouseModal('${w.id}')" title="Edit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="deleteWarehouse('${w.id}', '${escapeHTML(w.name)}')" title="Delete" style="color:var(--accent-danger)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+            </td>
+        </tr>`).join('');
     } catch (err) {
+        const tbodyErr = document.getElementById('warehouses-tbody');
+        if (tbodyErr) {
+            tbodyErr.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Failed to load warehouses</p></div></td></tr>';
+        }
         showToast('Failed to load warehouses', 'error');
     }
 }
 
-function showCreateWarehouseModal() {
+// ── Create ────────────────────────────────────────────────────────────────────
+
+async function showCreateWarehouseModal() {
     showModal('Add Warehouse', `
         <form onsubmit="handleCreateWarehouse(event)">
             <div class="form-row">
-                <div class="form-group"><label>Name</label><input class="form-control" id="wh-name" required></div>
-                <div class="form-group"><label>Code</label><input class="form-control" id="wh-code" required placeholder="WH-XXX"></div>
+                <div class="form-group">
+                    <label>Name <span style="color:var(--accent-danger)">*</span></label>
+                    <input class="form-control" id="wh-name" required placeholder="e.g. Main Warehouse">
+                </div>
+                <div class="form-group">
+                    <label>Code <span style="color:var(--accent-danger)">*</span></label>
+                    <input class="form-control" id="wh-code" required placeholder="e.g. WH01" style="text-transform:uppercase">
+                </div>
             </div>
-            <div class="form-group"><label>Address</label><input class="form-control" id="wh-address"></div>
-            <div class="form-group"><label>Capacity (units)</label><input type="number" class="form-control" id="wh-capacity" value="1000" min="0"></div>
-            <div class="modal-actions" style="border:none;padding:1rem 0 0"><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button><button type="submit" class="btn btn-primary">Create</button></div>
-        </form>`);
+            <div class="form-group">
+                <label>Address</label>
+                <input class="form-control" id="wh-address" placeholder="Street, City">
+            </div>
+            <div class="form-group">
+                <label>Capacity</label>
+                <input type="number" class="form-control" id="wh-capacity" min="0" placeholder="Maximum units (optional)">
+            </div>
+            <div class="modal-actions" style="border:none;padding:1rem 0 0">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Warehouse</button>
+            </div>
+        </form>
+    `);
 }
 
 async function handleCreateWarehouse(e) {
@@ -66,9 +96,9 @@ async function handleCreateWarehouse(e) {
     try {
         await API.post('/warehouses', {
             name: document.getElementById('wh-name').value,
-            code: document.getElementById('wh-code').value,
-            address: document.getElementById('wh-address').value,
-            capacity: parseInt(document.getElementById('wh-capacity').value) || 0,
+            code: document.getElementById('wh-code').value.toUpperCase(),
+            address: document.getElementById('wh-address').value || null,
+            capacity: parseInt(document.getElementById('wh-capacity').value) || null,
         });
         closeModal();
         showToast('Warehouse created!', 'success');
@@ -78,29 +108,50 @@ async function handleCreateWarehouse(e) {
     }
 }
 
+// ── Edit ──────────────────────────────────────────────────────────────────────
+
 async function showEditWarehouseModal(id) {
-    const wh = (await API.get('/warehouses')).find(w => w.id === id);
-    if (!wh) return;
-    showModal('Edit Warehouse', `
-        <form onsubmit="handleEditWarehouse(event, '${id}')">
-            <div class="form-row">
-                <div class="form-group"><label>Name</label><input class="form-control" id="ewh-name" value="${escapeHTML(wh.name)}" required></div>
-                <div class="form-group"><label>Code</label><input class="form-control" id="ewh-code" value="${escapeHTML(wh.code || '')}" required></div>
-            </div>
-            <div class="form-group"><label>Address</label><input class="form-control" id="ewh-address" value="${escapeHTML(wh.address || '')}"></div>
-            <div class="form-group"><label>Capacity</label><input type="number" class="form-control" id="ewh-capacity" value="${wh.capacity}" min="0"></div>
-            <div class="modal-actions" style="border:none;padding:1rem 0 0"><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
-        </form>`);
+    try {
+        const w = await API.get(`/warehouses/${id}`);
+        showModal('Edit Warehouse', `
+            <form onsubmit="handleEditWarehouse(event, '${id}')">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name <span style="color:var(--accent-danger)">*</span></label>
+                        <input class="form-control" id="wh-edit-name" required value="${escapeHTML(w.name)}">
+                    </div>
+                    <div class="form-group">
+                        <label>Code <span style="color:var(--accent-danger)">*</span></label>
+                        <input class="form-control" id="wh-edit-code" required value="${escapeHTML(w.code)}" style="text-transform:uppercase">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input class="form-control" id="wh-edit-address" value="${escapeHTML(w.address || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="number" class="form-control" id="wh-edit-capacity" min="0" value="${w.capacity ?? ''}">
+                </div>
+                <div class="modal-actions" style="border:none;padding:1rem 0 0">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        `);
+    } catch (err) {
+        showToast('Failed to load warehouse details', 'error');
+    }
 }
 
 async function handleEditWarehouse(e, id) {
     e.preventDefault();
     try {
         await API.put(`/warehouses/${id}`, {
-            name: document.getElementById('ewh-name').value,
-            code: document.getElementById('ewh-code').value,
-            address: document.getElementById('ewh-address').value,
-            capacity: parseInt(document.getElementById('ewh-capacity').value) || 0,
+            name: document.getElementById('wh-edit-name').value,
+            code: document.getElementById('wh-edit-code').value.toUpperCase(),
+            address: document.getElementById('wh-edit-address').value || null,
+            capacity: parseInt(document.getElementById('wh-edit-capacity').value) || null,
         });
         closeModal();
         showToast('Warehouse updated!', 'success');
@@ -110,25 +161,37 @@ async function handleEditWarehouse(e, id) {
     }
 }
 
-async function deleteWarehouse(id) {
-    if (!confirm('Deactivate this warehouse?')) return;
-    try {
-        await API.delete(`/warehouses/${id}`);
-        showToast('Warehouse deactivated', 'success');
-        await loadWarehouses();
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
+// ── Delete ────────────────────────────────────────────────────────────────────
+
+async function deleteWarehouse(id, name) {
+    showModal('Delete Warehouse', `
+        <div style="text-align:center;padding:1rem 0;">
+            <div style="font-size:2rem;margin-bottom:0.75rem;">🗑️</div>
+            <p style="font-size:1rem;font-weight:600;margin-bottom:0.5rem;">
+                Delete <strong>${escapeHTML(name)}</strong>?
+            </p>
+            <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1.5rem;">
+                This will permanently remove the warehouse and all its locations.<br>
+                This action cannot be undone.
+            </p>
+            <div class="modal-actions" style="border:none;padding:0;justify-content:center;gap:1rem;">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteWarehouse('${id}')">
+                    Yes, Delete Warehouse
+                </button>
+            </div>
+        </div>
+    `);
 }
 
-async function showWarehouseLocations(whId, whName) {
+async function confirmDeleteWarehouse(id) {
     try {
-        const locs = await API.get(`/warehouses/${whId}/locations`);
-        const rows = locs.length > 0
-            ? locs.map(l => `<tr><td>${escapeHTML(l.name)}</td><td><code>${escapeHTML(l.code||'')}</code></td><td>${l.type}</td></tr>`).join('')
-            : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">No locations configured</td></tr>';
-        showModal(`Locations — ${whName}`, `<table class="data-table"><thead><tr><th>Name</th><th>Code</th><th>Type</th></tr></thead><tbody>${rows}</tbody></table>`);
+        closeModal();
+        await API.delete(`/warehouses/${id}`);
+        showToast('Warehouse deleted', 'success');
+        // Guard: only reload if the warehouses page is still active
+        await loadWarehouses();
     } catch (err) {
-        showToast('Failed to load locations', 'error');
+        showToast(err.message || 'Failed to delete warehouse', 'error');
     }
 }

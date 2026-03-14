@@ -17,19 +17,18 @@ from typing import List
 from backend.database import get_db
 from backend.models import DeliveryOrder, DeliveryLine, Product, StockLevel, Warehouse, StockLedger
 from backend.schemas import DeliveryCreate, DeliveryResponse, DeliveryLineResponse
+from backend.audit import log_action
 
 router = APIRouter(prefix="/api/deliveries", tags=["Deliveries"])
 
 
 def _next_delivery_ref(warehouse_code: str, db: Session) -> str:
-    """Generate WH/<code>/OUT/<id> format reference per flow spec."""
     code = (warehouse_code or "WH").upper()
     count = db.query(DeliveryOrder).count() + 1
     return f"{code}/OUT/{str(count).zfill(4)}"
 
 
 def _check_stock_availability(lines, warehouse_id, db):
-    """Returns list of out-of-stock product names."""
     out_of_stock = []
     for line in lines:
         sl = db.query(StockLevel).filter(
@@ -105,10 +104,8 @@ def create_delivery(req: DeliveryCreate, db: Session = Depends(get_db)):
 
     ref = _next_delivery_ref(wh.code, db)
 
-    # Flow spec: auto-set to waiting if any product is out of stock
-    temp_lines = req.items
     out_of_stock = []
-    for item in temp_lines:
+    for item in req.items:
         sl = db.query(StockLevel).filter(
             StockLevel.product_id == item.product_id,
             StockLevel.warehouse_id == req.warehouse_id
@@ -133,6 +130,11 @@ def create_delivery(req: DeliveryCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(delivery)
 
+    log_action(db, "delivery", "create",
+        f"Delivery {ref} created for customer '{req.customer_name}' from {wh.name}"
+        + (f" — waiting (out of stock: {', '.join(out_of_stock)})" if out_of_stock else ""),
+        ref_number=ref)
+
     resp = _build_delivery_response(delivery, db)
     if out_of_stock:
         resp.notes = (resp.notes or "") + f" [WAITING: Out of stock — {', '.join(out_of_stock)}]"
@@ -141,13 +143,6 @@ def create_delivery(req: DeliveryCreate, db: Session = Depends(get_db)):
 
 @router.put("/{delivery_id}/status")
 def update_delivery_status(delivery_id: str, new_status: str, db: Session = Depends(get_db)):
-    """
-    Flow spec status transitions:
-      draft → waiting (if stock unavailable) or ready
-      waiting → ready (once stock is available)
-      ready → done (Validate) → decreases stock
-      any → canceled
-    """
     d = db.query(DeliveryOrder).filter(DeliveryOrder.id == delivery_id).first()
     if not d:
         raise HTTPException(status_code=404, detail="Delivery not found")
@@ -170,7 +165,6 @@ def update_delivery_status(delivery_id: str, new_status: str, db: Session = Depe
             detail=f"Cannot move from '{d.status}' to '{new_status}'. Allowed: {allowed}"
         )
 
-    # On moving to ready: check stock is available
     if new_status == "ready":
         out_of_stock = _check_stock_availability(d.lines, d.warehouse_id, db)
         if out_of_stock:
@@ -179,7 +173,6 @@ def update_delivery_status(delivery_id: str, new_status: str, db: Session = Depe
                 detail=f"Cannot set to Ready. Products out of stock: {', '.join(out_of_stock)}"
             )
 
-    # On done: decrease stock
     if new_status == "done":
         out_of_stock = _check_stock_availability(d.lines, d.warehouse_id, db)
         if out_of_stock:
@@ -205,12 +198,23 @@ def update_delivery_status(delivery_id: str, new_status: str, db: Session = Depe
 
     d.status = new_status
     db.commit()
+
+    action_map = {"ready": "update", "done": "validate", "canceled": "cancel", "waiting": "update"}
+    desc_map = {
+        "ready":    f"Delivery {d.ref_number} marked as ready",
+        "done":     f"Delivery {d.ref_number} validated — stock decreased",
+        "canceled": f"Delivery {d.ref_number} cancelled",
+        "waiting":  f"Delivery {d.ref_number} set to waiting (stock unavailable)",
+    }
+    log_action(db, "delivery", action_map.get(new_status, "update"),
+        desc_map.get(new_status, f"Delivery {d.ref_number} status changed to {new_status}"),
+        ref_number=d.ref_number)
+
     return {"message": f"Delivery status updated to '{new_status}'", "ref_number": d.ref_number}
 
 
 @router.get("/{delivery_id}/print", response_class=HTMLResponse)
 def print_delivery(delivery_id: str, db: Session = Depends(get_db)):
-    """Flow spec: Print the delivery once it's DONE."""
     d = db.query(DeliveryOrder).filter(DeliveryOrder.id == delivery_id).first()
     if not d:
         raise HTTPException(status_code=404, detail="Delivery not found")
@@ -276,4 +280,9 @@ def delete_delivery(delivery_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Cannot delete a completed delivery")
     db.delete(d)
     db.commit()
+
+    log_action(db, "delivery", "delete",
+        f"Delivery {d.ref_number} deleted",
+        ref_number=d.ref_number)
+
     return {"message": "Delivery deleted"}
