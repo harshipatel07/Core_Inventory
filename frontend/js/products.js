@@ -6,6 +6,8 @@ let productsCache = [];
 let categoriesCache = [];
 let warehousesCache = [];
 
+
+
 async function renderProducts() {
     const content = document.getElementById('page-content');
     content.innerHTML = `<div class="animate-in">
