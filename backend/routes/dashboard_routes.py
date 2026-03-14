@@ -4,6 +4,7 @@ Fixed: low_stock = stock > 0 AND <= threshold (NOT out of stock).
 out_of_stock = stock == 0. These are separate counts.
 """
 
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import date
