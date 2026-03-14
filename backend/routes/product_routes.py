@@ -2,6 +2,7 @@
 product_routes.py — Product CRUD, categories, stock availability.
 """
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
