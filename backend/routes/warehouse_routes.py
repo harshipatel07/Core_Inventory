@@ -14,6 +14,8 @@ from backend.audit import log_action
 router = APIRouter(prefix="/api/warehouses", tags=["Warehouses"])
 
 
+
+
 @router.get("", response_model=List[WarehouseResponse])
 def list_warehouses(db: Session = Depends(get_db)):
     warehouses = db.query(Warehouse).filter(Warehouse.is_active == True).order_by(Warehouse.name).all()
