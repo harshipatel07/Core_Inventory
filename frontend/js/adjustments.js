@@ -2,6 +2,8 @@
 // adjustments.js — Stock adjustments (physical count)
 // ============================================
 
+
+
 async function renderAdjustments() {
     const content = document.getElementById('page-content');
     content.innerHTML = `<div class="animate-in">
