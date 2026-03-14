@@ -4,6 +4,9 @@
 
 const API_BASE = '/api';
 
+
+
+
 async function api(endpoint, options = {}) {
     const url = `${API_BASE}${endpoint}`;
     const config = {
