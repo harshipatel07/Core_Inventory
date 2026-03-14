@@ -2,6 +2,8 @@
 // audit_log.js — System Audit Log viewer
 // ============================================
 
+
+
 async function renderAuditLog() {
     const content = document.getElementById('page-content');
     content.innerHTML = `<div class="animate-in">
