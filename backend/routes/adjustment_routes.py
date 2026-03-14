@@ -2,6 +2,7 @@
 adjustment_routes.py — Stock adjustments (physical count vs recorded).
 """
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
